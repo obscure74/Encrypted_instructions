@@ -3,7 +3,7 @@ def decode_instructions(compressed: str) -> str:
     """
     Раскодирует сжатую строку инструкций с повторениями в формате k[строка].
     
-    Алгоритм использует рекурсивный подход для обработки вложенных структур.
+    Алгоритм использует стековый подход для обработки вложенных структур.
     Примеры:
         "3[a]2[bc]" → "aaabcbc"
         "3[a2[c]]" → "accaccacc"
@@ -15,50 +15,29 @@ def decode_instructions(compressed: str) -> str:
     Returns:
         Раскодированная строка
     """
-    def decode_from_index(start_idx: int) -> tuple[str, int]:
-        """
-        Рекурсивно раскодирует подстроку начиная с заданной позиции.
+    stack: list[tuple[str, str]] = []  # (current_result, repeat_count)
+    current_result: str = ""
+    repeat_count_str: str = ""
         
-        Args:
-            start_idx: индекс начала раскодируемой подстроки
-            
-        Returns:
-            Кортеж (раскодированная_подстрока, следующий_индекс)
-        """
-        decoded_parts: list[str] = []
-        repeat_count: int = 0
-        current_idx: int = start_idx
+    for char in compressed:
+        if '0' <= char <= '9':
+            # Собираем цифры в строку
+            repeat_count_str += char
+        elif char == '[':
+            # Сохраняем текущее состояние в стек
+            stack.append((current_result, repeat_count_str))
+            current_result = ""
+            repeat_count_str = ""
+        elif char == ']':
+            # Извлекаем предыдущее состояние из стека
+            prev_result, prev_repeat_str = stack.pop()
+            repeat_count = int(prev_repeat_str)
+            current_result = prev_result + current_result * repeat_count
+        else:
+            # Обычный символ - добавляем к текущему результату
+            current_result += char
         
-        while current_idx < len(compressed):
-            current_char: str = compressed[current_idx]
-            
-            if current_char.isdigit():
-                repeat_count = repeat_count * 10 + int(current_char)
-                current_idx += 1
-            elif current_char == '[':
-                inner_decoded: str
-                next_idx: int
-                inner_decoded, next_idx = decode_from_index(current_idx + 1)
-                decoded_part: str = (
-                    inner_decoded * repeat_count 
-                    if repeat_count > 0 
-                    else inner_decoded
-                )
-                decoded_parts.append(decoded_part)
-                repeat_count = 0
-                current_idx = next_idx
-            elif current_char == ']':
-                return ''.join(decoded_parts), current_idx + 1
-            else:
-                decoded_parts.append(current_char)
-                current_idx += 1
-                repeat_count = 0
-        
-        return ''.join(decoded_parts), current_idx
-    
-    result: str
-    result, _ = decode_from_index(0)
-    return result
+        return current_result 
 
 
 def main() -> None:
