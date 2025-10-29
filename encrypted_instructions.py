@@ -1,9 +1,13 @@
 # ID посылки: 146611402
+from string import digits
+
+
 def decode_instructions(compressed: str) -> str:
     """
     Раскодирует сжатую строку инструкций с повторениями в формате k[строка].
     
     Алгоритм использует стековый подход для обработки вложенных структур.
+    Каждый элемент стека содержит кортеж из текущего результата и счетчика повторений.
     Примеры:
         "3[a]2[bc]" → "aaabcbc"
         "3[a2[c]]" → "accaccacc"
@@ -15,29 +19,26 @@ def decode_instructions(compressed: str) -> str:
     Returns:
         Раскодированная строка
     """
-    stack: list[tuple[str, str]] = []  # (current_result, repeat_count)
-    current_result: str = ""
-    repeat_count_str: str = ""
+    digit_characters = set(digits)
+    stack = []
+    result_builder = ""
+    repeat_digits = ""
         
     for char in compressed:
-        if '0' <= char <= '9':
-            # Собираем цифры в строку
-            repeat_count_str += char
+        if char in digit_characters:
+            repeat_digits += char
         elif char == '[':
-            # Сохраняем текущее состояние в стек
-            stack.append((current_result, repeat_count_str))
-            current_result = ""
-            repeat_count_str = ""
+            stack.append((result_builder, repeat_digits))
+            result_builder = ""
+            repeat_digits = ""
         elif char == ']':
-            # Извлекаем предыдущее состояние из стека
-            prev_result, prev_repeat_str = stack.pop()
-            repeat_count = int(prev_repeat_str)
-            current_result = prev_result + current_result * repeat_count
+            previous_result, previous_repeat = stack.pop()
+            repeat_count = int(previous_repeat)
+            result_builder = previous_result + result_builder * repeat_count
         else:
-            # Обычный символ - добавляем к текущему результату
-            current_result += char
-        
-        return current_result 
+            result_builder += char
+    
+    return result_builder
 
 
 def main() -> None:
@@ -47,7 +48,7 @@ def main() -> None:
     Читает сжатую строку из входных данных 
     и выводит раскодированную версию.
     """
-    compressed_input: str = input().strip()
+    compressed_input = input().strip()
     print(decode_instructions(compressed_input))
 
 
